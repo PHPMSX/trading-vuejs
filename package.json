@@ -21,6 +21,7 @@
     "@vue/cli-plugin-router": "~5.0.0",
     "@vue/cli-service": "~5.0.0",
     "axios": "^0.18.0",
+    "dotenv-webpack": "^8.0.1",
     "sass": "^1.69.5",
     "sass-loader": "^13.3.2",
     "vue-cli-plugin-axios": "~0.0.4",
@@ -29,7 +30,9 @@
   "eslintConfig": {
     "root": true,
     "env": {
-      "node": true
+      "node": true,
+      "browser": true,
+      "es6": true
     },
     "extends": [
       "plugin:vue/essential",

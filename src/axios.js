@@ -1,6 +1,3 @@
-"use strict";
-
-import Vue from 'vue';
 import axios from "axios";
 
 // Full config:  https://github.com/axios/axios#request-config
@@ -9,7 +6,7 @@ import axios from "axios";
 // axios.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded';
 
 let config = {
-  baseURL: process.env.BASE_URL || process.env.apiUrl || ""
+  baseURL: process.env.VUE_APP_API_URL
   // timeout: 60 * 1000, // Timeout
   // withCredentials: true, // Check cross-site Access-Control
 };
@@ -31,7 +28,7 @@ _axios.interceptors.request.use(
 _axios.interceptors.response.use(
   function(response) {
     // Do something with response data
-    return response;
+    return Promise.resolve(response.data);
   },
   function(error) {
     // Do something with response error
@@ -39,13 +36,4 @@ _axios.interceptors.response.use(
   }
 );
 
-const Plugin =  {
-  install(Vue){
-    Vue.axios = _axios;
-    window.axios = _axios;
-  }
-};
-
-Vue.use(Plugin)
-
-export default Plugin;
+window.axios = _axios;

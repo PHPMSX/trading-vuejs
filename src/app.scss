@@ -1,0 +1,102 @@
+.flex1 {
+  flex: 1;
+}
+
+.hi-flex {
+  display: flex !important;
+}
+
+.hi-rows {
+  display: flex;
+  flex-direction: row !important;
+}
+
+.hi-columns {
+  display: flex;
+  flex-direction: column !important;
+}
+
+.hi-wrap {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.hi-nowrap {
+  display: flex;
+  flex-wrap: nowrap !important;
+}
+
+.hi-space-between {
+  display: flex;
+  justify-content: space-between !important;
+}
+
+.hi-space-around {
+  display: flex;
+  justify-content: space-around !important;
+}
+
+.hi-flex-center {
+  justify-content: center;
+}
+
+.hi-flex-top {
+  align-items: flex-start;
+}
+
+.hi-flex-vcenter {
+  align-items: center;
+}
+
+.hi-flex-bottom {
+  align-items: flex-end;
+}
+
+.hi-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hi-flex-end {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.red {
+  color: #e93f4f !important;
+}
+
+.green {
+  color: #12b887 !important;
+}
+
+.t-center {
+  text-align: center;
+}
+
+.t-right {
+  text-align: right;
+}
+
+.navbar-title {
+  color: var(--text-color);
+  font-size: 32rpx;
+}
+
+.theme-text {
+  color: var(--text-color);
+}
+
+.theme-bg {
+  background-color: var(--bg-color);
+}
+
+.primary-text {
+  color: var(--primary-color);
+}
+
+body {
+  margin: 0 auto;
+  background-color: #bbb;
+}

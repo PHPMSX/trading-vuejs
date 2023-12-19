@@ -1,66 +1,32 @@
 <template>
-  <view class="chart-container">
+  <div class="chart-container">
+    <div v-if="loadingChart && chart === null"></div>
+    <div v-else-if="data.length === 0 && chart === null">
+      <div>No data</div>
+    </div>
+    <div v-else class="chart-container">
+      <div class="menu-time-frame hi-rows">
+        <div v-for="(time) in menuTimeFrame" :key="time" @click="selectTimeFrame(time)">
+          <div class="item-menu">
+            <div class="content-menu" :style="{color: time === timeFrame ? 'blue' : 'black'}">
+              {{ time === 'M1' ? 'Time' : time }}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="chart" ref="chartContainer" style="height: 80vh; width: 100%"></div>
+        <div class="hi-rows indicator-container">
+          <div v-for="i in listIndicator">
+            <div class="indicator" @click="setIndicator(i)"
+                  :style="{color: indicatorSelected === i ? 'blue' : 'black'}">{{ i }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-<!--    <view class="header">-->
-<!--      <view class="currency-info">-->
-<!--        <image :src="currentItem.icon" class="rounded-image" loading="lazy" alt="icon"></image>-->
-<!--        <view class="item-content">-->
-<!--          <view class="title">-->
-<!--            <view>ABC</view>-->
-<!--            <view v-if="currentItem.percentage" class="change"-->
-<!--                  :class="{ down: currentItem.percentage.includes('-') }">-->
-<!--              {{-->
-<!--                currentItem.percentage + '%'-->
-<!--              }}-->
-<!--            </view>-->
-<!--          </view>-->
-<!--          <view class="sub-title">{{ currentItem.time }}</view>-->
-<!--        </view>-->
-<!--        <view class="value">-->
-<!--          <view class="title">{{ currentItem.mid }}</view>-->
-<!--          <view class="sub-title">-->
-<!--            <text>H:{{ currentItem.high }}</text>-->
-<!--            <text class="padding">-</text>-->
-<!--            <text>L:{{ currentItem.low }}</text>-->
-<!--          </view>-->
-<!--        </view>-->
-<!--      </view>-->
-<!--    </view>-->
-
-
-<!--    <view class="content">-->
-      <div class="chart" ref="chartContainer" style="height: 700px; width: 1000px"></div>
-<!--      <view v-if="loadingChart"></view>-->
-<!--      <view v-else-if="data.length === 0">-->
-<!--        <None height="80vh" :imgWidth="56"/>-->
-<!--      </view>-->
-<!--      <view v-else class="chart-container">-->
-<!--        <view class="time-dropdown" @click.stop="showHideMenuTimeFrame">-->
-<!--          <text> {{ timeFrame }}</text>-->
-<!--          <u-icon name="play-right-fill" class="down-arrow" color="#666666" size="22"></u-icon>-->
-<!--        </view>-->
-<!--        <view v-if="isShowMenuTimeFrame" class="menu-time-frame">-->
-<!--          <view v-for="(timeFrame) in menuTimeFrame" :key="timeFrame" @click="selectTimeFrame(timeFrame)">-->
-<!--            <view class="item-menu">-->
-<!--              <view class="content-menu">-->
-<!--                {{ timeFrame }}-->
-<!--              </view>-->
-<!--            </view>-->
-<!--            <view style="height: 1px; background-color: #eeeeee"></view>-->
-<!--          </view>-->
-<!--        </view>-->
-<!--        <div class="chart" ref="chartContainer" style="height: 700px; width: 1000px"></div>-->
-<!--        <view class="hi-rows">-->
-<!--          <view v-for="i in listIndicator" :key="i">-->
-<!--            <view class="indicator" @click="setIndicator(i)"-->
-<!--                  :style="{color: indicatorSelected === i ? 'blue' : 'black'}">{{ i }}-->
-<!--            </view>-->
-<!--          </view>-->
-<!--        </view>-->
-<!--      </view>-->
-<!--    </view>-->
-
-  </view>
+  </div>
 </template>
 
 <script>
@@ -97,51 +63,64 @@ export default {
         high: null,
         low: null,
         close: null,
-        timestamp: null
+        timestamp: null,
+        volume: 0,
+        turnover: 0
       },
       data: [],
-      isShowMenuTimeFrame: false,
       loadingChart: true,
       isCloseSocket: false,
       isWeb: false,
       currentItem: {
         symbol: 'AUDUSD',
         icon: "https://juyou.s3.ap-east-1.amazonaws.com/exchange/icon/crypto/ADAUSDT.jpg",
-        high: "0",
-        low: "0",
-        mid: "0",
-        percentage: "0",
-        time: "0"
+        high: 0,
+        low: 0,
+        mid: '0.00',
+        percentage: 0,
+        time: 0
       },
       lastTs: null,
       timeTs: 0,
       canLoadMore: true,
       newDataLength: 0,
+      precision: 2
     }
   },
   created() {
     this.getCurrencyHistoryByTimeframe();
   },
   methods: {
+    createIndicatorMA() {
+      this.chart.createIndicator({
+        name: 'MA', precision: this.precision,
+      }, false, {id: 'candle_pane'})
+    },
+
     setIndicator(name) {
       if (this.indicatorSelected !== null) {
         this.chart.removeIndicator(this.indicatorSelected)
       }
       this.indicatorSelected = name
-      this.chart.createIndicator(name, true, {id: name})
+      this.chart.createIndicator({
+        name: name,
+        precision: this.precision,
+      }, true, {
+        id: name
+      })
     },
 
     getCurrencyHistoryByTimeframe() {
       this.data = [];
       this.timeTs = 0;
       this.loadingChart = true
-      window.axios.get('http://43.129.71.228:8082/api/market/getListCurrencyByType', {
+      axios.get('api/market/getListCurrencyByType', {
         params: {currency: this.currentItem.symbol, type: this.timeFrame, time: 0}
       })
           .then((res) => {
             this.loadingChart = false
             if (res.data != null && res.data.length !== 0) {
-              this.data = this.handleHistoryData(res.data.data)
+              this.data = this.handleHistoryData(res.data)
               this.timeTs = this.data[0].timestamp;
               setTimeout(() => {
                 this.initChart()
@@ -150,14 +129,15 @@ export default {
             }
           })
     },
+
     loadMoreHistory() {
       console.log(' Call load more with ts: ', this.timeTs)
-      window.axios.get('http://43.129.71.228:8082/api/market/getListCurrencyByType', {
+      axios.get('api/market/getListCurrencyByType', {
         params: {currency: this.currentItem.symbol, type: this.timeFrame, time: this.timeTs}
       })
           .then((res) => {
             if (res.data != null && res.data.length !== 0) {
-              let newData = this.handleHistoryData(res.data.data)
+              let newData = this.handleHistoryData(res.data)
               this.data = [...newData, ...this.data]
               this.timeTs = this.data[0].timestamp;
               this.chart.applyNewData(this.data);
@@ -167,7 +147,6 @@ export default {
     },
 
     handleHistoryData(arrayData) {
-      console.log(arrayData)
       let uniqueArr = [...new Map(arrayData.map((item) => [item.ts, item])).values()]
       let filteredArr = uniqueArr.filter(
           (item) =>
@@ -179,21 +158,23 @@ export default {
       );
       return filteredArr.map((item) => {
         return {
-          timestamp: new Date(item.ts),
-          open: item.open,
-          high: item.high,
-          low: item.low,
-          close: item.close,
-          volume: 100
+          timestamp: +item.ts,
+          open: +item.open,
+          high: +item.high,
+          low: +item.low,
+          close: +item.close,
+          volume: 0,
+          turnover: 0
         }
       })
     },
+
     connectSocket() {
       this.isCloseSocket = false
-      var url =  `ws://43.129.71.228:8082/api/market/forex/socket/chart?currency=${this.currentItem.symbol}`
+      const url =  process.env.VUE_APP_WS_URL + `api/market/forex/socket/chart?currency=${this.currentItem.symbol}`;
       console.log('connect socket: ', url)
       this.wsConnection = new WebSocket(url)
-      this.wsConnection.onopen = function () {
+      this.wsConnection.onopen = function (event) {
         console.log('Page trade chart: Open Socket Forex Detail')
       }
       this.wsConnection.onerror = function (error) {
@@ -205,7 +186,16 @@ export default {
     },
 
     initChart() {
-      this.chart = init(this.$refs.chartContainer)
+      if (this.chart === null) {
+        this.chart = init(this.$refs.chartContainer)
+        this.$refs.chartContainer.style.paddingBottom = '10px'
+        this.chart.loadMore((time) => {
+          console.log(time)
+          console.log(this.timeTs)
+          this.loadMoreHistory()
+          this.canLoadMore = false;
+        })
+      }
       this.chart.setStyles({
         grid: {
           show: true,
@@ -223,21 +213,20 @@ export default {
             dashedValue: [2, 2]
           }
         },
+        candle: {
+          type: this.timeFrame === 'M1' ? 'area' : 'candle_solid'
+        }
       })
-      this.$refs.chartContainer.style.paddingBottom = '10px'
-      this.chart.setPriceVolumePrecision(6, 6)
+      this.precision = this.currentItem.mid.split('.')[1].length + 1
+      this.chart.setPriceVolumePrecision(this.precision, this.precision)
       this.chart.applyNewData(this.data)
       this.lastIndex = this.data.length - 1
       this.currentIndex = this.lastIndex
-      this.ticksInCurrentBar = 0
+      this.ticksInCurrentBar = 59
       this.currentBar = this.data[this.data.length - 1]
-      this.chart.loadMore((time) => {
-        console.log(time)
-        console.log(this.timeTs)
-        this.loadMoreHistory()
-        this.canLoadMore = false;
-      })
+      this.createIndicatorMA()
     },
+
     resetChart() {
       if (this.wsConnection) {
         this.wsConnection.close()
@@ -250,10 +239,10 @@ export default {
       this.currentIndex = null
       this.ticksInCurrentBar = 0
     },
+
     paintChart(event) {
       let item = JSON.parse(event.data)
-      let date = item.ts
-      // Case 1: If ts is null or mid is null, don't paint candle
+      let date = +item.ts
       if (!item.ts || !item.mid) {
         return;
       }
@@ -261,26 +250,27 @@ export default {
         this.currentIndex++
         this.ticksInCurrentBar = 0
         this.lastClose = item.mid
-        this.mergeTickToBar(item.mid, date, true)
-      }else{
-        this.mergeTickToBar(item.mid, date)
+        this.mergeTickToBar(+item.mid, date, true)
+      } else {
+        this.mergeTickToBar(+item.mid, date)
       }
       this.lastTs = item.ts;
     },
 
     mergeTickToBar(price, date, insert = false) {
 
-      if(insert){
-        const dataList = this.chart.getDataList()
+      if (insert) {
+        console.log('Insert new ' + date)
         let currentBar = {
           open: price,
           high: price,
           low: price,
           close: price,
-          timestamp: date
+          timestamp: date,
+          volume: 0,
+          turnover: 0
         }
-        dataList.push(currentBar)
-        this.chart.applyNewData(dataList)
+        this.chart.updateData(currentBar)
         return
       }
 
@@ -293,18 +283,10 @@ export default {
 
       this.chart.updateData(newData)
     },
-    handleSwitchCurrency(currencyObject) {
-      this.resetChart()
-      this.currentItem = currencyObject
-      this.getCurrencyHistoryByTimeframe()
-    },
-    showHideMenuTimeFrame() {
-      this.isShowMenuTimeFrame = !this.isShowMenuTimeFrame
-    },
+
     selectTimeFrame(timeFrame) {
       this.timeFrame = timeFrame;
       this.page = 0;
-      this.showHideMenuTimeFrame()
       this.resetChart()
       switch (timeFrame) {
         case '1M':
@@ -343,15 +325,34 @@ export default {
 }
 
 .chart-container {
-  background-color: #FFFFFF;
-  // border-top-left-radius: 10px;
-  // border-top-right-radius: 10px;
+  background-color: white;
   border-radius: 10px;
   width: 100%;
   display: block !important;
 
+  .menu-time-frame {
+    border-radius: 5px;
+    box-shadow: 0 0 10px 5px rgba(0, 0, 0, 0.1);
+
+    .item-menu {
+      align-items: center;
+      padding: 10px 16px;
+
+      .content-menu {
+        font-weight: 500;
+        font-size: 14px;
+        color: black;
+      }
+    }
+  }
+
   .chart {
-    background-color: #1b1b1f;
+    border: 1px solid black;;
+  }
+
+  .indicator-container {
+    margin-top: 20px;
+    margin-bottom: 20px;
   }
 
 
@@ -407,7 +408,6 @@ export default {
         }
       }
 
-
       .value {
         text-align: right;
         white-space: nowrap;
@@ -443,54 +443,6 @@ export default {
     }
 
   }
-
-  .content {
-    padding: 0 8px;
-
-    .chart-container {
-      position: relative;
-
-      .time-dropdown {
-        display: flex;
-        justify-content: center;
-        font-weight: 700;
-        font-size: 15px;
-        color: #444444;
-        width: 50px;
-        border-style: solid;
-        border-width: 1px;
-        border-color: #dfdfdf;
-        padding: 2px 2px 2px 2px;
-
-        .down-arrow {
-          margin-left: 5px;
-          transform: rotate(90deg);
-        }
-      }
-
-      .menu-time-frame {
-        border-radius: 5px;
-        background: #fff;
-        box-shadow: 0px 0px 10px 5px rgba(0, 0, 0, 0.1);
-        top: 28px;
-        left: 0px;
-        position: absolute;
-        z-index: 999;
-
-        .item-menu {
-          align-items: center;
-          padding: 10px 16px;
-
-          .content-menu {
-            font-weight: 500;
-            font-size: 14px;
-            color: #333333;
-          }
-        }
-      }
-    }
-  }
-
 
 }
 </style>
